@@ -3,7 +3,9 @@ package com.example.nekoo.coolweather;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
@@ -14,10 +16,12 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.example.nekoo.coolweather.db.City;
 import com.example.nekoo.coolweather.db.County;
 import com.example.nekoo.coolweather.db.Province;
@@ -53,6 +57,9 @@ public class ChooseAreaFragment extends Fragment {
     private ArrayAdapter<String> adapter;
     private List<String> dataList =new ArrayList<>();
 
+
+    //private String bingPic;
+    private ImageView backImg;
     /**
      * 省列表
      */
@@ -91,8 +98,10 @@ public class ChooseAreaFragment extends Fragment {
         titleText = (TextView)view.findViewById(R.id.title_text);
         backButton=(Button) view.findViewById(R.id.back_button);
         listView = (ListView) view.findViewById(R.id.list_view);
+        backImg=(ImageView)view.findViewById(R.id.back_img) ;
         adapter = new ArrayAdapter<String>(getContext(),android.R.layout.simple_list_item_1,dataList);
         listView.setAdapter(adapter);
+        loadPic();
         return view;
     }
 
@@ -110,10 +119,17 @@ public class ChooseAreaFragment extends Fragment {
                     queryCounties();
                 }else if(currentLevel==LEVEL_COUNTY){
                     String weatherId = countyList.get(i).getWeatherId();
-                    Intent intent = new Intent(getActivity(),WeatherActivity.class);
-                    intent.putExtra("weather_id",weatherId);
-                    startActivity(intent);
-                    getActivity().finish();
+                    if(getActivity() instanceof  MainActivity) {
+                        Intent intent = new Intent(getActivity(), WeatherActivity.class);
+                        intent.putExtra("weather_id", weatherId);
+                        startActivity(intent);
+                        getActivity().finish();
+                    }else if(getActivity() instanceof  WeatherActivity){
+                        WeatherActivity activity = (WeatherActivity)getActivity();
+                        activity.drawerLayout.closeDrawers();
+                        activity.swipeRefresh.setRefreshing(true);
+                        activity.requestWeather(weatherId);
+                    }
                 }
             }
         });
@@ -269,5 +285,29 @@ public class ChooseAreaFragment extends Fragment {
         }
     }
 
+
+    public void loadPic(){
+        String requestBingPic ="http://guolin.tech/api/bing_pic";
+        HttpUtil.sendOkHttpRequest(requestBingPic, new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                final String bingPic= response.body().string();
+                SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(getContext()).edit();
+                editor.putString("bing_pic",bingPic);
+                editor.apply();
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Glide.with(ChooseAreaFragment.this).load(bingPic).into(backImg);
+                    }
+                });
+            }
+        });
+    }
 }
 
