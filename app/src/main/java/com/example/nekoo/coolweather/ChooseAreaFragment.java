@@ -2,6 +2,7 @@ package com.example.nekoo.coolweather;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
@@ -107,6 +108,12 @@ public class ChooseAreaFragment extends Fragment {
                 }else if(currentLevel ==LEVEL_CITY){
                     selectedCity = cityList.get(i);
                     queryCounties();
+                }else if(currentLevel==LEVEL_COUNTY){
+                    String weatherId = countyList.get(i).getWeatherId();
+                    Intent intent = new Intent(getActivity(),WeatherActivity.class);
+                    intent.putExtra("weather_id",weatherId);
+                    startActivity(intent);
+                    getActivity().finish();
                 }
             }
         });
@@ -127,7 +134,7 @@ public class ChooseAreaFragment extends Fragment {
      * 查询全国所有的省，优先从数据库查询，如果没有再去服务器上查询
      */
     private void queryProvinces(){
-        titleText.setText("中国");
+
         backButton.setVisibility(View.GONE);
         provinceList= DataSupport.findAll(Province.class);
         if(provinceList.size()>0){
@@ -142,13 +149,14 @@ public class ChooseAreaFragment extends Fragment {
             String address="http://guolin.tech/api/china";
             queryFromServer(address,"province");
         }
+        titleText.setText("中国");
     }
 
     /**
      * 查询选中省内所有的市，优先从数据库中查，如果没有查询到再到服务器上去查
      */
     private void queryCities(){
-        titleText.setText(selectedProvince.getProvinceName());
+
         backButton.setVisibility(View.VISIBLE);
         cityList = DataSupport.where("provinceid=?",String.valueOf(selectedProvince.getId())).find(City.class);
         if(cityList.size()>0){
@@ -164,13 +172,14 @@ public class ChooseAreaFragment extends Fragment {
             String address = "http://guolin.tech/api/china/"+provinceCode;
             queryFromServer(address,"city");
         }
+        titleText.setText(selectedProvince.getProvinceName());
     }
 
     /**
      * 查询选中市内所有的县，优先从数据库查询，如果没有查询到再去服务器上去查
      */
     private void queryCounties(){
-        titleText.setText(selectedCity.getCityName());
+
         backButton.setVisibility(View.VISIBLE);
         countyList = DataSupport.where("cityid=?",String.valueOf(selectedCity.getId())).find(County.class);
         if(countyList.size()>0){
@@ -187,6 +196,7 @@ public class ChooseAreaFragment extends Fragment {
             String address= "http://guolin.tech/api/china/"+provinceCode+"/"+cityCode;
             queryFromServer(address,"county");
         }
+        titleText.setText(selectedCity.getCityName());
     }
 
 
